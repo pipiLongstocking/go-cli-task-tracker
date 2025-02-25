@@ -34,7 +34,7 @@ func (jdb *JsonTaskDB) Connect() error {
 	jdb.mu.Lock()
 	defer jdb.mu.Unlock()
 
-	file, err := os.OpenFile(jdb.filePath, os.O_RDWR|os.O_CREATE, 0644)
+	file, err := os.OpenFile(jdb.filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
@@ -47,21 +47,13 @@ func (jdb *JsonTaskDB) Connect() error {
 		return err
 	}
 
-	// Check if the file is empty, and fill it with an empty array, if so
-	info, err := jdb.file.Stat()
-	if err != nil {
+	// Write an empty array to the file.
+	if err = json.NewEncoder(jdb.file).Encode([]*db.Task{}); err != nil {
 		return err
 	}
-
-	if info.Size() == 0 {
-		emptyTasks := []interface{}{}
-		if err = json.NewEncoder(jdb.file).Encode(emptyTasks); err != nil {
-			return err
-		}
-		// Set the offset to the beginning of the file
-		if _, err = jdb.file.Seek(0, 0); err != nil {
-			return err
-		}
+	// Set the offset to the beginning of the file
+	if _, err = jdb.file.Seek(0, 0); err != nil {
+		return err
 	}
 
 	return nil
@@ -76,6 +68,9 @@ func (jdb *JsonTaskDB) Close() error {
 		return err
 	}
 	if err := jdb.file.Close(); err != nil {
+		return err
+	}
+	if err := os.Remove(jdb.filePath); err != nil {
 		return err
 	}
 	jdb.file = nil
@@ -104,6 +99,10 @@ func (jdb *JsonTaskDB) getTasks() ([]*db.Task, error) {
 func (jdb *JsonTaskDB) writeTasks(tasks []*db.Task) error {
 	// Truncate the file before writing
 	if err := jdb.file.Truncate(0); err != nil {
+		return err
+	}
+
+	if _, err := jdb.file.Seek(0, 0); err != nil {
 		return err
 	}
 	encoder := json.NewEncoder(jdb.file)

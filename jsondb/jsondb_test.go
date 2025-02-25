@@ -1,6 +1,7 @@
 package jsondb
 
 import (
+	"go-cli-task-tracker/db"
 	"os"
 	"testing"
 )
@@ -13,17 +14,18 @@ func TestJsonTaskDB_ConnectAndClose(t *testing.T) {
 	}
 	defer os.Remove(tempFile.Name())
 	
-	db := NewJsonTaskDB(tempFile.Name())
-	if err := db.Connect(); err != nil {
+	tdb := NewJsonTaskDB(tempFile.Name())
+	if err := tdb.Connect(); err != nil {
 		t.Fatalf("Failed to connect to db: %s", err.Error())
 	}
 
-	if err = db.Close(); err != nil {
+	if err = tdb.Close(); err != nil {
 		t.Fatalf("Failed to close db: %s", err.Error())
 	}
 }
 
-func TestJsonTaskDB_GetTasks(t *testing.T) {
+func TestJsonTaskDB_TaskMethods(t *testing.T) {
+	// Setup
 	path := t.TempDir()
 	tempFile, err := os.CreateTemp(path, "*.json")
 	if err != nil {
@@ -31,36 +33,37 @@ func TestJsonTaskDB_GetTasks(t *testing.T) {
 	}
 	defer os.Remove(tempFile.Name())	
 	
-	db := NewJsonTaskDB(tempFile.Name())
-	if err := db.Connect(); err != nil {
+	// Create a new task database
+	tdb := NewJsonTaskDB(tempFile.Name())
+	if err := tdb.Connect(); err != nil {
 		t.Fatalf("Failed to connect to db: %s", err.Error())
 	}
 
 	tasks := []db.Task{
 		{
-			ID: 1,
 			Title: "Task 1",
 			IsCompleted: false,
 		},
 		{
-			ID: 2,
 			Title: "Task 2",
 			IsCompleted: true,
 		},
 		{
-			ID: 3,
 			Title: "Task 3",
 			IsCompleted: false,
 		},
 	}
 	
+	// Test Add tasks
 	for _, task := range tasks {
-		if err := db.AddTask(&task); err != nil {
+		if err := tdb.AddTask(&task); err != nil {
 			t.Fatalf("Failed to add task: %s", err.Error())
 		}
 	}
 
-	gotTasks, err := db.GetTasks()
+
+	// Test Get all tasks
+	gotTasks, err := tdb.GetTasks()
 	if err != nil {
 		t.Fatalf("Failed to get tasks: %s", err.Error())	
 	}
@@ -69,10 +72,7 @@ func TestJsonTaskDB_GetTasks(t *testing.T) {
 		t.Fatalf("Expected %d tasks, got %d", len(tasks), len(gotTasks))
 	}
 
-	for i, task := range tasks {
-		if gotTasks[i].ID != tasks[i].ID {
-			t.Fatalf("Expected task %d to have ID %d, got %d", i, tasks[i].ID, gotTasks[i].ID)		
-		}
+	for i, _ := range tasks {
 		if gotTasks[i].Title != tasks[i].Title {
 			t.Fatalf("Expected task %d to have title %s, got %s", i, tasks[i].Title, gotTasks[i].Title)
 		}
@@ -80,8 +80,37 @@ func TestJsonTaskDB_GetTasks(t *testing.T) {
 			t.Fatalf("Expected task %d to have IsCompleted %t, got %t", i, tasks[i].IsCompleted, gotTasks[i].IsCompleted)	
 		}
 	}
+
+	// Test Delete task
+	err = tdb.DeleteTask(4)
+	if err == nil {
+		t.Fatalf("Expected error for deleting non-existent task, got nil")
+	} else {
+		if err.Error() != "task with ID 4 not found" {	
+			t.Fatalf("Expected error message to be 'task with ID 4 not found', got %s", err.Error())
+		}
+	}
+
+
+	// Test Delete task with valid ID
+	for _, task := range gotTasks {
+	err = tdb.DeleteTask(task.ID)
+	if err != nil {
+			t.Fatalf("Failed to delete task: %s", err.Error())
+		}
+	}
+
+	// Test Get all tasks after deletion
+	gotTasks, err = tdb.GetTasks()
+	if err != nil {
+		t.Fatalf("Failed to get tasks: %s", err.Error())
+	}
 	
-	if err := db.Close(); err != nil {
+	if len(gotTasks) != 0 {
+		t.Fatalf("Expected 0 tasks, got %d", len(gotTasks))
+	}	
+	
+	if err := tdb.Close(); err != nil {
 		t.Fatalf("Failed to close db: %s", err.Error())
 	}
 }
