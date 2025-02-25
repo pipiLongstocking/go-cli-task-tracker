@@ -72,7 +72,7 @@ func TestJsonTaskDB_TaskMethods(t *testing.T) {
 		t.Fatalf("Expected %d tasks, got %d", len(tasks), len(gotTasks))
 	}
 
-	for i, _ := range tasks {
+	for i := range tasks {
 		if gotTasks[i].Title != tasks[i].Title {
 			t.Fatalf("Expected task %d to have title %s, got %s", i, tasks[i].Title, gotTasks[i].Title)
 		}
