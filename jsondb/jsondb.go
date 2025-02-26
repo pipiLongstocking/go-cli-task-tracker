@@ -153,3 +153,26 @@ func (jdb *JsonTaskDB) DeleteTask(taskID uint64) error {
 	}
 	return fmt.Errorf("task with ID %d not found", taskID)
 }
+
+func (jdb *JsonTaskDB) CompleteTask(taskID uint64) error {
+	// Check whether the taskID is valid
+	jdb.mu.Lock()
+	defer jdb.mu.Unlock()
+
+	tasks, err := jdb.getTasks()
+	if err != nil {
+		return err
+	}
+	idx := -1
+	for i, t := range tasks {
+		if t.ID == taskID {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return fmt.Errorf("task with ID %d not found", taskID)
+	}
+	tasks[idx].IsCompleted = true
+	return jdb.writeTasks(tasks)
+}

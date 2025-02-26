@@ -81,6 +81,27 @@ func TestJsonTaskDB_TaskMethods(t *testing.T) {
 		}
 	}
 
+	// Test Complete taskk
+	err = tdb.CompleteTask(0)
+	if err == nil {
+		t.Fatalf("Expected error for completing non-existent task, got nil")
+	} else {
+		if err.Error() != "task with ID 0 not found" {	
+			t.Fatalf("Expected error message to be 'task with ID 0 not found', got %s", err.Error())
+		}
+	}
+
+	err = tdb.CompleteTask(gotTasks[0].ID)
+	if err != nil {
+		t.Fatalf("Failed to complete task: %s", err.Error())
+	}
+
+	// Test Complete task with valid ID
+	err = tdb.CompleteTask(tasks[0].ID)
+	if err != nil {
+		t.Fatalf("Failed to complete task: %s", err.Error())
+	}
+
 	// Test Delete task
 	err = tdb.DeleteTask(4)
 	if err == nil {

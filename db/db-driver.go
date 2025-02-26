@@ -12,4 +12,6 @@ type TaskDB interface {
 	GetTasks() ([]*Task, error)
 	// DeleteTask deletes a task from the database
 	DeleteTask(taskID uint64) error
+	// CompleteTask marks a task as completed in the database
+	CompleteTask(taskID uint64) error
 }
