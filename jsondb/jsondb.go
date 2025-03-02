@@ -33,7 +33,7 @@ func (jdb *JsonTaskDB) Connect() error {
 	jdb.mu.Lock()
 	defer jdb.mu.Unlock()
 
-	file, err := os.OpenFile(jdb.filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	file, err := os.OpenFile(jdb.filePath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
@@ -45,10 +45,15 @@ func (jdb *JsonTaskDB) Connect() error {
 	if err != nil {
 		return err
 	}
-
-	// Write an empty array to the file.
-	if err = json.NewEncoder(jdb.file).Encode([]*db.Task{}); err != nil {
+	info, err :=file.Stat()
+	if err != nil {
 		return err
+	}
+	if info.Size() == 0 {
+		// Write an empty array to the file.
+		if err = json.NewEncoder(jdb.file).Encode([]*db.Task{}); err != nil {
+			return err
+		}
 	}
 	// Set the offset to the beginning of the file
 	if _, err = jdb.file.Seek(0, 0); err != nil {
@@ -67,9 +72,6 @@ func (jdb *JsonTaskDB) Close() error {
 		return err
 	}
 	if err := jdb.file.Close(); err != nil {
-		return err
-	}
-	if err := os.Remove(jdb.filePath); err != nil {
 		return err
 	}
 	jdb.file = nil
