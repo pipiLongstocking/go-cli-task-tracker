@@ -8,7 +8,6 @@ import (
 	"os"
 	"sync"
 	"syscall"
-	"time"
 )
 
 // JsonTaskDB is the implementation of the TaskDB interface for a JSON file
@@ -128,7 +127,7 @@ func (jdb *JsonTaskDB) AddTask(t *db.Task) error {
 	if len(tasks) > 0 {
 		t.ID = tasks[len(tasks)-1].ID + 1
 	} else {
-		t.ID = uint64(time.Now().Unix())
+		t.ID = 1
 	}
 	tasks = append(tasks, t)
 	return jdb.writeTasks(tasks)
@@ -148,6 +147,7 @@ func (jdb *JsonTaskDB) DeleteTask(taskID uint64) error {
 	for i, t := range tasks {
 		if t.ID == taskID {
 			tasks = append(tasks[:i], tasks[i+1:	]...)
+			jdb.updateTaskIDs(tasks)
 			return jdb.writeTasks(tasks)
 		}
 	}
@@ -175,4 +175,11 @@ func (jdb *JsonTaskDB) CompleteTask(taskID uint64) error {
 	}
 	tasks[idx].IsCompleted = true
 	return jdb.writeTasks(tasks)
+}
+
+// updateTaskIDs updates the IDs of the tasks to be sequential
+func (jdb *JsonTaskDB) updateTaskIDs(tasks []*db.Task) {
+	for i := range tasks {
+		tasks[i].ID = uint64(i+1)
+	}
 }
