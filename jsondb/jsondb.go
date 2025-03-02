@@ -145,15 +145,12 @@ func (jdb *JsonTaskDB) DeleteTask(taskID uint64) error {
 	if err != nil {
 		return err
 	}
-
-	for i, t := range tasks {
-		if t.ID == taskID {
-			tasks = append(tasks[:i], tasks[i+1:	]...)
-			jdb.updateTaskIDs(tasks)
-			return jdb.writeTasks(tasks)
-		}
+	if taskID >= uint64(len(tasks)) {
+		return fmt.Errorf("task with ID %d not found", taskID)
 	}
-	return fmt.Errorf("task with ID %d not found", taskID)
+	tasks = append(tasks[:taskID], tasks[taskID+1:]...)
+	jdb.updateTaskIDs(tasks)
+	return jdb.writeTasks(tasks)
 }
 
 func (jdb *JsonTaskDB) CompleteTask(taskID uint64) error {
